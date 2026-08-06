@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>pijota · a coding agent written in Java</title>
+    <meta name="description" content="Pijota is a coding agent written in Java. One native binary. Any model. Yours to hack and improve.">
+    <meta property="og:title" content="pijota · a coding agent written in Java">
+    <meta property="og:description" content="One native binary. Any model. Yours to hack and improve.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://pijota.org">
+    <meta property="og:image" content="https://pijota.org/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="pijota: a coding agent written in Java">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://pijota.org/og-image.png">
+    <link rel="canonical" href="https://pijota.org/">
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#fbfaf8">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121110">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@0,400;0,500;0,700&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23121110'/%3E%3Ctext x='5' y='22' font-family='monospace' font-size='15' font-weight='bold' fill='%23e0692f'%3Epj%3C/text%3E%3Crect x='20' y='17' width='8' height='4' fill='%23e6e4df'/%3E%3C/svg%3E">
+    <style>
+        /* one declaration per colour; light-dark() picks the side.
+           the toggle only has to flip color-scheme. */
+        :root {
+            color-scheme: light dark;
+            --paper:        light-dark(#fbfaf8, #121110);
+            --paper-raised: light-dark(#f3f1ed, #1a1917);
+            --ink:          light-dark(#1b1917, #e6e4df);
+            --ink-soft:     light-dark(#403d39, #c2bfb8);
+            --muted:        light-dark(#6b675f, #9a968d);
+            --rule:         light-dark(#e7e4de, #242220);
+            --rule-strong:  light-dark(#d5d1c9, #373431);
+            --accent:       light-dark(#b3451e, #e0692f);
+            --header-bg:    light-dark(rgba(251, 250, 248, 0.85), rgba(18, 17, 16, 0.85));
+        }
+
+        [data-theme="light"] { color-scheme: light; }
+        [data-theme="dark"]  { color-scheme: dark; }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            scroll-behavior: smooth;
+            font-size: 17px;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--paper);
+            color: var(--ink-soft);
+            line-height: 1.65;
+        }
+
+        ::selection { background: var(--accent); color: var(--paper); }
+
+        :focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 3px;
+            border-radius: 2px;
+        }
+
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        .wrap {
+            max-width: 46rem;
+            margin: 0 auto;
+            padding-left: 1.5rem;
+            padding-right: 1.5rem;
+        }
+
+        /* ── Header ── */
+        header {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 100;
+            height: 58px;
+            padding: 0 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--header-bg);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--rule);
+            transition: background 0.2s;
+        }
+
+        header.scrolled {
+            background: var(--paper);
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+        }
+
+        .wordmark {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--ink);
+            text-decoration: none;
+            letter-spacing: -0.02em;
+        }
+
+        .wordmark .ps1 { color: var(--accent); }
+
+        .cursor {
+            display: inline-block;
+            width: 0.55em;
+            height: 1.05em;
+            background: var(--ink);
+            vertical-align: text-bottom;
+            margin-left: 2px;
+            animation: blink 1.15s steps(1) infinite;
+        }
+
+        @keyframes blink { 50% { opacity: 0; } }
+
+        nav { display: flex; gap: 1.4rem; }
+
+        nav a {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--muted);
+            font-size: 0.875rem;
+            text-decoration: none;
+            transition: color 0.15s;
+        }
+
+        nav a:hover { color: var(--ink); }
+
+        .nav-right { display: flex; align-items: center; gap: 0.75rem; }
+
+        .theme-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px; height: 34px;
+            background: transparent;
+            border: 1px solid var(--rule-strong);
+            border-radius: 6px;
+            cursor: pointer;
+            color: var(--muted);
+            transition: all 0.15s;
+        }
+
+        .theme-toggle:hover { color: var(--ink); border-color: var(--muted); }
+
+        .gh-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.45rem 0.9rem;
+            background: var(--ink);
+            color: var(--paper);
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-decoration: none;
+            border-radius: 6px;
+            transition: opacity 0.15s;
+        }
+
+        .gh-btn:hover { opacity: 0.85; }
+        .gh-btn svg { width: 15px; height: 15px; fill: currentColor; }
+
+        /* ── Skip link ── */
+        .skip {
+            position: absolute;
+            left: -9999px;
+            top: 0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+            background: var(--ink);
+            color: var(--paper);
+            padding: 0.5rem 1rem;
+            z-index: 200;
+            text-decoration: none;
+        }
+
+        .skip:focus { left: 0.5rem; top: 0.5rem; }
+
+        /* ── Typing: monospace, so ch units are exact ── */
+        .type {
+            display: inline-block;
+            overflow: hidden;
+            white-space: nowrap;
+            vertical-align: bottom;
+        }
+
+        @keyframes type { to { width: calc(var(--n) * 1ch); } }
+        @keyframes caretDone { to { visibility: hidden; } }
+        @keyframes caretOn { to { visibility: visible; } }
+
+        /* hero: plays once on load, --d sets each step's start.
+           every hidden state is behind .js, so with scripting off the text is
+           simply there — nothing depends on an animation finishing to be read */
+        .hero .w { display: inline-block; }
+
+        .js .hero .type {
+            width: 0;
+            animation: type calc(var(--n) * 0.013s) steps(var(--n)) var(--d, 0.05s) both;
+        }
+
+        .js .hero .w {
+            opacity: 0;
+            animation: wordIn 0.09s ease-out both;
+            animation-delay: calc(var(--base, 0.43s) + var(--i) * 0.008s);
+        }
+
+        /* carets exist only while their command is typing */
+        #version-caret, #typed-caret { display: none; }
+
+        .js #version-caret, .js #typed-caret {
+            display: inline-block;
+            visibility: hidden;
+        }
+
+        .js #version-caret {
+            animation: caretOn 0s 0.05s both,
+                       blink 0.7s steps(1) 0.05s infinite,
+                       caretDone 0s 0.22s both;
+        }
+
+        .js #typed-caret {
+            animation: caretOn 0s 0.05s both,
+                       blink 0.7s steps(1) 0.05s infinite,
+                       caretDone 0s 0.41s both;
+        }
+
+        /* tokens land, they don't drift in — no transform, no filter,
+           so text keeps subpixel antialiasing the whole way through */
+        @keyframes wordIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* ── Sections: hidden until .play (added on scroll), then ──
+           ── command types, caret dies, response streams ── */
+        .js .reveal .type { width: 0; }
+        .js .reveal .type-caret { display: none; }
+        .js .reveal .w { display: inline-block; opacity: 0; }
+        .js .reveal > * + *:not(.stream):not(pre) {
+            opacity: 0;
+            transform: translateY(6px);
+        }
+        .js .reveal > pre {
+            opacity: 0;
+            clip-path: inset(0 0 100% 0);
+        }
+
+        .js .reveal.play .type {
+            animation: type calc(var(--n) * 0.014s) steps(var(--n)) 0.05s both;
+        }
+
+        .js .reveal.play .type-caret {
+            display: inline-block;
+            animation: blink 0.7s steps(1) infinite,
+                       caretDone 0s calc(var(--n) * 0.014s + 0.08s) both;
+        }
+
+        /* token bursts: tight cadence, every 4th word hesitates a beat.
+           --base offsets a whole run, so several runs can stream in turn */
+        .js .reveal.play .w {
+            animation: wordIn 0.09s ease-out both;
+            animation-delay: calc(var(--n) * 0.014s + 0.12s + var(--base, 0s) + var(--i) * 0.009s);
+        }
+
+        .js .reveal.play .w:nth-child(4n) {
+            animation-delay: calc(var(--n) * 0.014s + 0.12s + var(--base, 0s) + var(--i) * 0.009s + 0.025s);
+        }
+
+        /* --i orders block-level output, so a section prints in sequence
+           instead of arriving all at once */
+        .js .reveal.play > * + *:not(.stream):not(pre) {
+            animation: sectionIn 0.26s ease-out both;
+            animation-delay: calc(var(--n) * 0.014s + 0.1s + var(--i, 0) * 0.11s);
+        }
+
+        .js .reveal.play > pre {
+            animation: prePrint calc(var(--lines) * 0.022s) steps(var(--lines), end)
+                       calc(var(--n) * 0.014s + 0.12s + var(--i, 0) * 0.11s) both;
+        }
+
+        @keyframes sectionIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: none; }
+        }
+
+        @keyframes prePrint {
+            from { opacity: 0; clip-path: inset(0 0 100% 0); }
+            to { opacity: 1; clip-path: inset(0 0 0 0); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto; }
+            .type { width: auto !important; animation: none !important; }
+            .hero .w, .reveal > *, .reveal .w {
+                opacity: 1 !important; transform: none !important;
+                filter: none !important; clip-path: none !important;
+                animation: none !important;
+            }
+            .reveal .type-caret { display: none !important; }
+            .cursor, .caret { animation: none !important; visibility: visible !important; }
+        }
+
+        /* ── Scrollback ── */
+        main { padding: 9rem 0 5rem; }
+
+        h1 {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: clamp(3rem, 11vw, 5.25rem);
+            font-weight: 700;
+            letter-spacing: -0.05em;
+            color: var(--ink);
+            line-height: 1.1;
+            margin-bottom: 3.5rem;
+        }
+
+        .blk { margin-bottom: 5rem; scroll-margin-top: 84px; }
+        .hero .blk { margin-bottom: 2.25rem; }
+
+        .cmdline {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--ink);
+            margin-bottom: 1.1rem;
+            overflow-x: auto;
+            white-space: nowrap;
+            scrollbar-width: none;
+        }
+
+        .cmdline::-webkit-scrollbar { display: none; }
+        .cmdline .ps1 { color: var(--accent); user-select: none; }
+
+        .caret {
+            display: inline-block;
+            width: 0.55em;
+            height: 1.05em;
+            background: var(--ink);
+            vertical-align: text-bottom;
+            margin-left: 1px;
+            animation: blink 1.15s steps(1) infinite;
+        }
+
+        .caret.done { display: none; }
+
+        .out {
+            font-size: 1.0625rem;
+            line-height: 1.75;
+            color: var(--ink-soft);
+            max-width: 62ch;
+        }
+
+        .out.dim {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9375rem;
+            color: var(--muted);
+        }
+
+        /* pulls a phrase forward out of the body copy */
+        .out .em { color: var(--ink); font-weight: 500; }
+
+        pre {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9375rem;
+            line-height: 1.8;
+            color: var(--ink-soft);
+            white-space: pre;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+        pre::-webkit-scrollbar { display: none; }
+        pre b { color: var(--ink); font-weight: 500; }
+        pre .h { color: var(--muted); }
+        pre .c { color: var(--muted); }
+        pre .ps1 { color: var(--accent); }
+
+        /* copyable command boxes */
+        .cmd-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9375rem;
+            color: var(--muted);
+            margin-top: 1.75rem;
+        }
+
+        .cmdline + .cmd-label { margin-top: 0; }
+
+        .install-line {
+            display: flex;
+            align-items: stretch;
+            width: fit-content;
+            border: 1px solid var(--rule-strong);
+            border-radius: 6px;
+            overflow: hidden;
+            background: var(--paper-raised);
+            max-width: 100%;
+            margin-top: 0.5rem;
+        }
+
+        .install-line + pre { margin-top: 2rem; }
+
+        .install-line code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+            color: var(--ink);
+            padding: 0.8rem 0.95rem;
+            white-space: nowrap;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+        .install-line code::-webkit-scrollbar { display: none; }
+        .install-line code .ps1 { color: var(--accent); user-select: none; }
+        .install-line code { user-select: all; cursor: text; }
+
+        .copy-btn {
+            display: flex;
+            align-items: center;
+            padding: 0 0.9rem;
+            background: transparent;
+            border: none;
+            border-left: 1px solid var(--rule-strong);
+            color: var(--muted);
+            cursor: pointer;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8125rem;
+            transition: all 0.15s;
+        }
+
+        .copy-btn:hover { color: var(--ink); background: var(--paper); }
+
+        .install-note {
+            margin-top: 0.9rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8125rem;
+            color: var(--muted);
+        }
+
+        .install-note a { color: var(--ink-soft); }
+        .install-note a:hover { color: var(--accent); }
+
+        /* ── Footer ── */
+        footer {
+            border-top: 1px solid var(--rule);
+            padding: 2.25rem 0 3rem;
+        }
+
+        footer .cmdline { margin-bottom: 0.6rem; }
+
+        .footer-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem 1.6rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9375rem;
+            margin: 0.9rem 0 1.5rem;
+        }
+
+        .footer-links a {
+            color: var(--muted);
+            text-decoration: none;
+        }
+
+        .footer-links a:hover { color: var(--accent); }
+
+        .footer-fine {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8125rem;
+            color: var(--muted);
+        }
+
+        .footer-fine a { color: inherit; border-bottom: 1px dotted var(--rule-strong); text-decoration: none; }
+        .footer-fine a:hover { color: var(--accent); }
+
+        /* ── Print: it already is a transcript ── */
+        @media print {
+            header, .copy-btn, .skip { display: none; }
+            main { padding-top: 0; }
+            .type { width: auto !important; animation: none !important; }
+            .hero .w, .reveal > *, .reveal .w {
+                opacity: 1 !important; transform: none !important;
+                filter: none !important; clip-path: none !important;
+                animation: none !important;
+            }
+            .reveal .type-caret { display: none !important; }
+        }
+
+        /* ── Mobile ── */
+        @media (max-width: 768px) {
+            nav { gap: 1rem; }
+            nav a:not(.keep) { display: none; }
+            main { padding: 7.5rem 0 3.5rem; }
+            h1 { margin-bottom: 2.75rem; }
+            .blk { margin-bottom: 4rem; }
+            pre { font-size: 0.875rem; }
+        }
+    </style>
+    <noscript><style>.theme-toggle, .copy-btn { display: none; }</style></noscript>
+    <script>
+      (function() {
+        var saved = localStorage.getItem('theme');
+        if (saved) setTheme(saved);
+        document.documentElement.classList.add('js');
+      })();
+      function setTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        // the meta tags carry a media query for the OS preference; an explicit
+        // choice has to override both of them
+        document.querySelectorAll('meta[name="theme-color"]').forEach(function(m) {
+          m.removeAttribute('media');
+          m.setAttribute('content', theme === 'dark' ? '#121110' : '#fbfaf8');
+        });
+      }
+      function toggleTheme() {
+        var explicit = document.documentElement.getAttribute('data-theme');
+        var isDark = explicit
+          ? explicit === 'dark'
+          : window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var next = isDark ? 'light' : 'dark';
+        setTheme(next);
+        localStorage.setItem('theme', next);
+      }
+      function copyCmd(btn) {
+        // the command is whatever sits in the box, minus the "$ " prompt
+        var code = btn.parentNode.querySelector('code');
+        var ps1 = code.querySelector('.ps1');
+        var cmd = code.textContent;
+        if (ps1) cmd = cmd.slice(ps1.textContent.length);
+        cmd = cmd.trim();
+        var done = function() {
+          var old = btn.textContent;
+          btn.textContent = 'copied';
+          setTimeout(function() { btn.textContent = old; }, 1500);
+        };
+        var fallback = function() {
+          var ta = document.createElement('textarea');
+          ta.value = cmd;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          try { if (document.execCommand('copy')) done(); } catch (e) {}
+          document.body.removeChild(ta);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(cmd).then(done, fallback);
+        } else {
+          fallback();
+        }
+      }
+      document.addEventListener('DOMContentLoaded', function() {
+        // scroll trigger: CSS owns the animations, JS only says "play"
+        var io = 'IntersectionObserver' in window ? new IntersectionObserver(function(entries) {
+          entries.forEach(function(e) {
+            if (e.isIntersecting) { e.target.classList.add('play'); io.unobserve(e.target); }
+          });
+        }, { threshold: 0.15 }) : null;
+        document.querySelectorAll('.reveal').forEach(function(s) {
+          if (io) io.observe(s); else s.classList.add('play');
+        });
+        // solid header after scroll (cheaper than perpetual blur)
+        var hdr = document.querySelector('header');
+        var onScroll = function() { hdr.classList.toggle('scrolled', window.scrollY > 8); };
+        window.addEventListener('scroll', onScroll, { passive: true });
+        onScroll();
+        // keep the footer year current; the markup carries a sane fallback
+        var yr = document.getElementById('yr');
+        if (yr) yr.textContent = new Date().getFullYear();
+        // latest version from GitHub; falls back to the hardcoded one
+        var ver = document.getElementById('ver');
+        if (ver && window.fetch) {
+          fetch('https://api.github.com/repos/mukel/pijota/releases/latest')
+            .then(function(r) { return r.ok ? r.json() : null; })
+            .then(function(d) {
+              if (d && d.tag_name) ver.textContent = d.tag_name.replace(/^v/, '');
+            })
+            .catch(function() {});
+        }
+      });
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "pijota",
+      "applicationCategory": "DeveloperApplication",
+      "operatingSystem": "Linux, macOS, Windows (WSL)",
+      "description": "A coding agent written in Java. One native binary. Any model. Yours to hack and improve.",
+      "url": "https://pijota.org",
+      "license": "https://www.apache.org/licenses/LICENSE-2.0",
+      "codeRepository": "https://github.com/mukel/pijota",
+      "programmingLanguage": "Java"
+    }
+    </script>
+</head>
+
+<body>
+    <a class="skip" href="#help">skip to content</a>
+    <header>
+        <a href="/" class="wordmark"><span class="ps1">$</span> pijota<span class="cursor"></span></a>
+        <div class="nav-right">
+            <nav>
+                <a href="#why">why</a>
+                <a href="#install" class="keep">install</a>
+                <a href="#demo">demo</a>
+                <a href="#help">help</a>
+                <a href="#models">models</a>
+            </nav>
+            <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
+                    <circle cx="12" cy="12" r="9"/>
+                    <path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/>
+                </svg>
+            </button>
+            <a href="https://github.com/mukel/pijota" class="gh-btn" target="_blank" rel="noopener noreferrer">
+                <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+                Star
+            </a>
+        </div>
+    </header>
+
+    <main class="wrap">
+
+        <div class="hero">
+            <h1>pijota<span class="cursor"></span></h1>
+
+            <div class="blk">
+                <p class="cmdline"><span class="ps1">$</span> <span class="type" style="--n:12; --d:0.05s">pj --version</span><span class="caret" id="version-caret" aria-hidden="true"></span></p>
+                <p class="out dim" style="--base:0.22s"><span class="w" style="--i:0">pijota</span> <span class="w" style="--i:1"><a href="https://github.com/mukel/pijota/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer" style="color:inherit;border-bottom:1px dotted var(--rule-strong);text-decoration:none">v<span id="ver">0.2.0</span></a></span></p>
+            </div>
+
+            <div class="blk">
+                <p class="cmdline" aria-label='pj -p "what is pijota/pj?"'><span class="ps1" aria-hidden="true">$</span> <span class="type" aria-hidden="true" style="--n:26; --d:0.05s">pj -p "what is pijota/pj?"</span><span class="caret" id="typed-caret" aria-hidden="true"></span></p>
+                <p class="out" id="typed-answer"><span class="w" style="--i:0">A</span> <span class="w" style="--i:1">minimalist</span> <span class="w" style="--i:2">coding</span> <span class="w" style="--i:3">agent</span> <span class="w em" style="--i:4">written</span> <span class="w em" style="--i:5">in</span> <span class="w em" style="--i:6">pure</span> <span class="w em" style="--i:7">Java.</span> <span class="w" style="--i:8">One</span> <span class="w" style="--i:9">native</span> <span class="w" style="--i:10">binary,</span> <span class="w" style="--i:11">any</span> <span class="w" style="--i:12">model.</span> <span class="w" style="--i:13">Reads</span> <span class="w" style="--i:14">and</span> <span class="w" style="--i:15">edits</span> <span class="w" style="--i:16">code,</span> <span class="w" style="--i:17">runs</span> <span class="w" style="--i:18">commands,</span> <span class="w" style="--i:19">searches</span> <span class="w" style="--i:20">the</span> <span class="w" style="--i:21">web,</span> <span class="w" style="--i:22">speaks</span> <span class="w" style="--i:23">MCP,</span> <span class="w" style="--i:24">delegates</span> <span class="w" style="--i:25">to</span> <span class="w" style="--i:26">sub-agents.</span> <span class="w" style="--i:27">No</span> <span class="w" style="--i:28">alt-screen</span> <span class="w" style="--i:29">takeover:</span> <span class="w" style="--i:30">output</span> <span class="w" style="--i:31">stays</span> <span class="w" style="--i:32">in</span> <span class="w" style="--i:33">your</span> <span class="w" style="--i:34">scrollback,</span> <span class="w" style="--i:35">so</span> <span class="w" style="--i:36">copy,</span> <span class="w" style="--i:37">search</span> <span class="w" style="--i:38">and</span> <span class="w" style="--i:39">panes</span> <span class="w" style="--i:40">keep</span> <span class="w" style="--i:41">working.</span> <span class="w" style="--i:42">Sessions</span> <span class="w" style="--i:43">resume,</span> <span class="w" style="--i:44">fork</span> <span class="w" style="--i:45">and</span> <span class="w" style="--i:46">export.</span> <span class="w" style="--i:47">Apache-2.0.</span> <span class="w" style="--i:48">Heavily</span> <span class="w" style="--i:49">inspired</span> <span class="w" style="--i:50">by</span> <span class="w" style="--i:51"><a href="https://pi.dev" target="_blank" rel="noopener noreferrer" style="color:inherit;border-bottom:1px dotted var(--rule-strong);text-decoration:none">pi.dev</a>,</span> <span class="w" style="--i:52">unashamedly</span> <span class="w" style="--i:53">so.</span></p>
+            </div>
+
+        </div>
+
+        <section class="blk reveal" id="why" style="--n:17">
+            <p class="cmdline"><span class="ps1">$</span> <span class="type">pj -p "why java?"</span><span class="caret type-caret" aria-hidden="true"></span></p>
+            <p class="out stream"><span class="w" style="--i:0">Java</span> <span class="w" style="--i:1">is</span> <span class="w" style="--i:2">fast.</span> <span class="w" style="--i:3">pijota</span> <span class="w" style="--i:4">is</span> <span class="w" style="--i:5">pure</span> <span class="w" style="--i:6">Java,</span> <span class="w" style="--i:7">written</span> <span class="w" style="--i:8">to</span> <span class="w" style="--i:9">stay</span> <span class="w" style="--i:10">compatible</span> <span class="w" style="--i:11">with</span> <span class="w" style="--i:12">GraalVM</span> <span class="w" style="--i:13">Native</span> <span class="w" style="--i:14">Image:</span> <span class="w" style="--i:15">one</span> <span class="w" style="--i:16">binary,</span> <span class="w" style="--i:17">instant</span> <span class="w" style="--i:18">start,</span> <span class="w" style="--i:19">no</span> <span class="w" style="--i:20">JVM</span> <span class="w" style="--i:21">to</span> <span class="w" style="--i:22">install.</span> <span class="w" style="--i:23"><span class="mono">jbang</span></span> <span class="w" style="--i:24">pulls</span> <span class="w" style="--i:25">it</span> <span class="w" style="--i:26">from</span> <span class="w" style="--i:27">Maven</span> <span class="w" style="--i:28">Central</span> <span class="w" style="--i:29">in</span> <span class="w" style="--i:30">one</span> <span class="w" style="--i:31">line.</span> <span class="w" style="--i:32">No</span> <span class="w" style="--i:33">node,</span> <span class="w" style="--i:34">no</span> <span class="w" style="--i:35">python,</span> <span class="w" style="--i:36">no</span> <span class="w" style="--i:37">version</span> <span class="w" style="--i:38">manager,</span> <span class="w" style="--i:39">no</span> <span class="w" style="--i:40">lockfile.</span> <span class="w" style="--i:41">One</span> <span class="w" style="--i:42">file</span> <span class="w" style="--i:43">on</span> <span class="w" style="--i:44">your</span> <span class="w" style="--i:45">PATH,</span> <span class="w" style="--i:46">the</span> <span class="w" style="--i:47">same</span> <span class="w" style="--i:48">everywhere.</span></p>
+        </section>
+
+        <section class="blk reveal" id="install" style="--n:23; --lines:6">
+            <p class="cmdline"><span class="ps1">$</span> <span class="type">pj -p "how to install?"</span><span class="caret type-caret" aria-hidden="true"></span></p>
+
+            <p class="cmd-label stream" style="--base:0s"><span class="w" style="--i:0">on</span> <span class="w" style="--i:1">the</span> <span class="w" style="--i:2">jvm,</span> <span class="w" style="--i:3">needs</span> <span class="w" style="--i:4">JDK</span> <span class="w" style="--i:5">21:</span></p>
+            <div class="install-line" style="--i:1">
+                <code><span class="ps1">$</span> jbang app install --name pj org.pijota:pijota:RELEASE</code>
+                <button class="copy-btn" onclick="copyCmd(this)" aria-label="Copy jvm install command">copy</button>
+            </div>
+
+            <p class="cmd-label stream" style="--base:0.19s"><span class="w" style="--i:0">or</span> <span class="w" style="--i:1">a</span> <span class="w" style="--i:2">GraalVM</span> <span class="w" style="--i:3">native</span> <span class="w" style="--i:4">binary:</span></p>
+            <div class="install-line" style="--i:3">
+                <code><span class="ps1">$</span> jbang app install --name pj org.pijota:pijota:RELEASE --native</code>
+                <button class="copy-btn" onclick="copyCmd(this)" aria-label="Copy native install command">copy</button>
+            </div>
+
+            <p class="cmd-label stream" style="--base:0.41s"><span class="w" style="--i:0">or</span> <span class="w" style="--i:1">refresh</span> <span class="w" style="--i:2">an</span> <span class="w" style="--i:3">existing</span> <span class="w" style="--i:4">install:</span></p>
+            <div class="install-line" style="--i:5">
+                <code><span class="ps1">$</span> jbang app install --force --fresh --name pj org.pijota:pijota:RELEASE</code>
+                <button class="copy-btn" onclick="copyCmd(this)" aria-label="Copy refresh command">copy</button>
+            </div>
+
+            <pre style="--i:6">set a key and go (<b>pj login</b> does oauth):
+
+<span class="ps1">$</span> <b>KIMI_API_KEY=sk-... pj -m kimi-coding/k3</b>
+
+<span class="c"># pj runs with your permissions, not a sandbox.</span>
+<span class="c"># --readonly, a container, or a worktree to isolate.</span></pre>
+
+            <p class="install-note" style="--i:7">linux · macos · windows via wsl · <a href="https://github.com/mukel/pijota#build-from-source" target="_blank" rel="noopener noreferrer">build from source</a></p>
+        </section>
+
+        <section class="blk reveal" id="demo" style="--n:38">
+            <p class="cmdline"><span class="ps1">$</span> <span class="type">pj -p "why does CartTest fail? fix it"</span><span class="caret type-caret" aria-hidden="true"></span></p>
+            <pre style="--lines:10"><b>ls</b>    .                                           <span class="c">4 entries</span>
+<b>glob</b>  **/*                                        <span class="c">30 paths</span>
+<b>read</b>  src/main/java/store/Cart.java
+<b>read</b>  src/test/java/store/CartTest.java
+<b>read</b>  target/surefire-reports/store.CartTest.txt
+<b>edit</b>  src/main/java/store/Cart.java               <span class="c">+1 -1</span>
+<b>bash</b>  mvn -q test 2&gt;&amp;1 | tail -20                 <span class="c">no output</span>
+<b>bash</b>  mvn test 2&gt;&amp;1 | grep -E "Tests run|BUILD"   <span class="c">BUILD SUCCESS</span>
+
+<span class="c">done · 30s · 35k tokens · deepseek/deepseek-v4-flash</span></pre>
+        </section>
+
+        <section class="blk reveal" id="help" style="--n:9">
+            <p class="cmdline"><span class="ps1">$</span> <span class="type">pj --help</span><span class="caret type-caret" aria-hidden="true"></span></p>
+            <pre style="--lines:33"><span class="h">usage:</span> pj [options] [prompt]
+
+<span class="h">frontends</span>
+  <b>pj</b>                     interactive TUI, append-only
+  <b>pj -p "..."</b>            print mode, one turn, exits
+  <b>pj --mode rpc</b>          JSON-RPC over stdio
+  <b>pj --mode json</b>         NDJSON event stream
+  <b>pj acp</b>                 editor integration (Zed, JetBrains)
+  <b>pj web</b> [host:port]     local web UI
+  <b>pj telegram</b>            telegram bot
+
+<span class="h">commands</span>
+  <b>pj login</b>               oauth and api keys
+  <b>pj worktree</b>            temporary pooled git worktree
+
+<span class="h">models</span>
+  <b>-m</b> provider/model      e.g. -m anthropic/claude-sonnet-4-5
+  <b>--thinking</b> level       reasoning effort
+  <b>--list-models</b>          what you can reach right now
+
+<span class="h">sessions</span>
+  <b>-c</b>                     continue the last session
+  <b>-r</b>                     session picker
+  <b>-s</b> id                  load by id or path
+  <b>--export</b> file          transcript to markdown
+
+<span class="h">tools</span>
+  read write edit apply_patch grep glob ls bash
+  webfetch websearch question task · extensions add more
+  <b>--readonly</b>             read, search, fetch; nothing writes
+  <b>--tool</b> a,b,c           allowlist
+  <b>--no-tool</b> a,b,c        denylist; deny wins
+  <b>--browse</b>               browser automation</pre>
+        </section>
+
+        <section class="blk reveal" id="history" style="--n:17">
+            <p class="cmdline"><span class="ps1">$</span> <span class="type">history | grep pj</span><span class="caret type-caret" aria-hidden="true"></span></p>
+            <pre style="--lines:7"><span class="c">  512</span>  pj
+<span class="c">  513</span>  cat error.log | pj -p "what broke?"
+<span class="c">  519</span>  pj -m kimi-coding/k3 --thinking high
+<span class="c">  534</span>  pj --readonly -p "review this diff"
+<span class="c">  541</span>  cd $(pj worktree get) &amp;&amp; pj -p "fix the flaky test"
+<span class="c">  547</span>  pj --browse -p "is staging up?"
+<span class="c">  548</span>  pj -c</pre>
+        </section>
+
+        <section class="blk reveal" id="models" style="--n:37">
+            <p class="cmdline"><span class="ps1">$</span> <span class="type">pj -p "which providers are built in?"</span><span class="caret type-caret" aria-hidden="true"></span></p>
+            <pre style="--lines:12">deepseek  anthropic  google  openai  groq  xai  mistral  together
+openrouter  cerebras  fireworks  baseten  openai-codex  kimi-coding
+moonshotai  moonshotai-cn  xiaomi-token-plan-{cn,ams,sgp}  zai
+huggingface  nvidia  minimax
+
+set a key and go:
+
+<span class="ps1">$</span> <b>KIMI_API_KEY=sk-...      pj -m kimi-coding/k3</b>
+<span class="ps1">$</span> <b>DEEPSEEK_API_KEY=sk-...  pj -m deepseek/deepseek-v4-flash</b>
+
+<span class="c"># 23 built in · pj login does oauth</span>
+<span class="c"># add any openai-compatible endpoint in settings.json</span></pre>
+        </section>
+
+        <section class="blk reveal" id="extend" style="--n:12">
+            <p class="cmdline"><span class="ps1">$</span> <span class="type">ls ~/.pijota</span><span class="caret type-caret" aria-hidden="true"></span></p>
+            <pre style="--lines:5">auth.json  browser/  history  logs/  mcp.json  models-cache.json
+sessions/  settings.json  themes/  tool-output/  trust.json  worktrees/
+
+<span class="c"># extensions/, skills/ and agents/ appear once you add them.</span>
+<span class="c"># a project's .pijota/ loads only after you trust the folder.</span></pre>
+        </section>
+
+
+    </main>
+
+    <footer>
+        <div class="wrap reveal" style="--n:13">
+            <p class="cmdline"><span class="ps1">$</span> <span class="type">cat links.txt</span><span class="caret type-caret" aria-hidden="true"></span></p>
+            <div class="footer-links">
+                <a href="https://github.com/mukel/pijota" target="_blank" rel="noopener noreferrer">github</a>
+                <a href="https://github.com/mukel/pijota/tree/main/docs" target="_blank" rel="noopener noreferrer">docs</a>
+                <a href="https://github.com/mukel/pijota/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">changelog</a>
+                <a href="https://central.sonatype.com/artifact/org.pijota/pijota" target="_blank" rel="noopener noreferrer">maven central</a>
+                <a href="https://github.com/mukel/pijota/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">apache-2.0</a>
+            </div>
+
+            <p class="footer-fine">pijota · <span id="yr">2026</span> · heavily inspired by <a href="https://pi.dev" target="_blank" rel="noopener noreferrer">pi.dev</a>, unashamedly so</p>
+
+            <p class="cmdline" style="margin-top:2.25rem"><span class="ps1">$</span> <span class="cursor"></span></p>
+        </div>
+    </footer>
+</body>
+</html>
