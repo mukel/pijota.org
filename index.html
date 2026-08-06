@@ -302,8 +302,11 @@
                 filter: none !important; clip-path: none !important;
                 animation: none !important;
             }
-            .reveal .type-caret { display: none !important; }
-            .cursor, .caret { animation: none !important; visibility: visible !important; }
+            /* typing carets are transient — with no typing to do they have
+               nothing to mark, so hide them all. only the idle prompt cursors
+               (.cursor) stay, minus the blink. */
+            .caret { display: none !important; }
+            .cursor { animation: none !important; visibility: visible !important; }
         }
 
         /* ── Scrollback ── */
@@ -415,6 +418,10 @@
         }
 
         .install-line code::-webkit-scrollbar { display: none; }
+
+        /* a hyphen is a legal break point, so wrapping splits "--name" into
+           "--" + "name". keep flags whole. */
+        .nb { white-space: nowrap; }
         .install-line code .ps1 { color: var(--accent); user-select: none; }
         .install-line code { user-select: all; cursor: text; }
 
@@ -487,7 +494,7 @@
                 filter: none !important; clip-path: none !important;
                 animation: none !important;
             }
-            .reveal .type-caret { display: none !important; }
+            .caret { display: none !important; }
         }
 
         /* ── Mobile ── */
@@ -497,7 +504,40 @@
             main { padding: 7.5rem 0 3.5rem; }
             h1 { margin-bottom: 2.75rem; }
             .blk { margin-bottom: 4rem; }
-            pre { font-size: 0.875rem; }
+            pre { font-size: 0.8125rem; }
+
+            /* aligned transcripts have to scroll sideways on a phone, so give
+               that a visible handle instead of hiding the scrollbar */
+            pre { scrollbar-width: thin; scrollbar-color: var(--rule-strong) transparent; }
+            pre::-webkit-scrollbar { display: block; height: 3px; }
+            pre::-webkit-scrollbar-thumb {
+                background: var(--rule-strong);
+                border-radius: 2px;
+            }
+
+            /* a real `ls` reflows to the terminal width — so let these wrap
+               rather than scroll; they are lists, not aligned columns */
+            #extend pre { white-space: pre-wrap; }
+
+            /* the install commands only differ at the end (--native,
+               --force --fresh), so truncating them makes all three look the
+               same. wrap instead: full width, nothing hidden. */
+            .install-line { width: 100%; }
+            .install-line code {
+                white-space: pre-wrap;
+                overflow-x: visible;
+                font-size: 0.8125rem;
+                min-width: 0;            /* let flex shrink it, or the button gets clipped */
+                overflow-wrap: anywhere; /* last resort on very narrow screens */
+                padding: 0.8rem 0.7rem;  /* buys enough width to keep the maven coord whole */
+            }
+            .copy-btn { padding: 0 0.7rem; }
+        }
+
+        /* very narrow phones: the wordmark and the nav link collide */
+        @media (max-width: 380px) {
+            header { padding: 0 1rem; }
+            nav { display: none; }
         }
     </style>
     <noscript><style>.theme-toggle, .copy-btn { display: none; }</style></noscript>
@@ -559,7 +599,7 @@
           entries.forEach(function(e) {
             if (e.isIntersecting) { e.target.classList.add('play'); io.unobserve(e.target); }
           });
-        }, { threshold: 0.15 }) : null;
+        }, { threshold: 0, rootMargin: '0px 0px -80px 0px' }) : null;
         document.querySelectorAll('.reveal').forEach(function(s) {
           if (io) io.observe(s); else s.classList.add('play');
         });
@@ -651,19 +691,19 @@
 
             <p class="cmd-label stream" style="--base:0s"><span class="w" style="--i:0">on</span> <span class="w" style="--i:1">the</span> <span class="w" style="--i:2">jvm,</span> <span class="w" style="--i:3">needs</span> <span class="w" style="--i:4">JDK</span> <span class="w" style="--i:5">21:</span></p>
             <div class="install-line" style="--i:1">
-                <code><span class="ps1">$</span> jbang app install --name pj org.pijota:pijota:RELEASE</code>
+                <code><span class="ps1">$</span> jbang app install <span class="nb">--name</span> pj org.pijota:pijota:RELEASE</code>
                 <button class="copy-btn" onclick="copyCmd(this)" aria-label="Copy jvm install command">copy</button>
             </div>
 
             <p class="cmd-label stream" style="--base:0.19s"><span class="w" style="--i:0">or</span> <span class="w" style="--i:1">a</span> <span class="w" style="--i:2">GraalVM</span> <span class="w" style="--i:3">native</span> <span class="w" style="--i:4">binary:</span></p>
             <div class="install-line" style="--i:3">
-                <code><span class="ps1">$</span> jbang app install --name pj org.pijota:pijota:RELEASE --native</code>
+                <code><span class="ps1">$</span> jbang app install <span class="nb">--name</span> pj org.pijota:pijota:RELEASE <span class="nb">--native</span></code>
                 <button class="copy-btn" onclick="copyCmd(this)" aria-label="Copy native install command">copy</button>
             </div>
 
             <p class="cmd-label stream" style="--base:0.41s"><span class="w" style="--i:0">or</span> <span class="w" style="--i:1">refresh</span> <span class="w" style="--i:2">an</span> <span class="w" style="--i:3">existing</span> <span class="w" style="--i:4">install:</span></p>
             <div class="install-line" style="--i:5">
-                <code><span class="ps1">$</span> jbang app install --force --fresh --name pj org.pijota:pijota:RELEASE</code>
+                <code><span class="ps1">$</span> jbang app install <span class="nb">--force</span> <span class="nb">--fresh</span> <span class="nb">--name</span> pj org.pijota:pijota:RELEASE</code>
                 <button class="copy-btn" onclick="copyCmd(this)" aria-label="Copy refresh command">copy</button>
             </div>
 
